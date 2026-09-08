@@ -2,7 +2,7 @@
  * @runAt idle
  * @name SpotifyEnhance
  * @description All in one better spotify-discord experience.
- * @version 1.1.16
+ * @version 1.1.17
  * @author Skamt
  * @website https://github.com/Skamt/BDAddons/tree/main/SpotifyEnhance
  * @source https://raw.githubusercontent.com/Skamt/BDAddons/main/SpotifyEnhance/SpotifyEnhance.plugin.js
@@ -12,7 +12,7 @@
 var Config_default = {
 	"info": {
 		"name": "SpotifyEnhance",
-		"version": "1.1.16",
+		"version": "1.1.17",
 		"description": "All in one better spotify-discord experience.",
 		"source": "https://raw.githubusercontent.com/Skamt/BDAddons/main/SpotifyEnhance/SpotifyEnhance.plugin.js",
 		"github": "https://github.com/Skamt/BDAddons/tree/main/SpotifyEnhance",
@@ -537,9 +537,14 @@ var SpotifyClientAPI = class {
 		return this.getRequestBuilder().setPath("/me/player/repeat").setMethod("PUT").setParams({ state }).build().run();
 	}
 	listen(type, id) {
-		let body = {};
-		if (type === "track" || type === "episode") body = { uris: [`spotify:${type}:${id}`] };
-		else body = { context_uri: `spotify:${type}:${id}` };
+		if (type === "track" || type === "episode") {
+			const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+			return this.queue(type, id)
+				.then(() => wait(250))
+				.then(() => this.next());
+		}
+
+		const body = { context_uri: `spotify:${type}:${id}` };
 		return this.getRequestBuilder().setPath("/me/player/play").setMethod("PUT").setBody(body).build().run();
 	}
 	queue(type, id) {
@@ -2089,7 +2094,10 @@ var SpotifyEmbed_default = ({ id, type }) => {
 		/* @__PURE__ */
 		React_default.createElement(Tooltip_default2, { note: "Play on Spotify" }, /* @__PURE__ */ React_default.createElement(
 			"div", {
-				onClick: preventDefault(() => Store.Utils.openSpotifyLink(url)),
+				onClick: preventDefault(() => {
+				Store.Utils.openSpotifyLink(url);
+				setTimeout(() => Store.Api.listen(type, id, rawTitle), 1500);
+			}),
 				className: "spotify-embed-spotifyIcon"
 			},
 			/* @__PURE__ */
